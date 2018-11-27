@@ -1,5 +1,9 @@
 skip_branch_with_pr: true
 
+environment:
+  NETLIFY_BUILD_HOOK:
+    secure: B+WxLXotvuRzEvMtuTWijhs3s+jvnGifsmNIMEf7ll0=
+
 version: '{build}'
 init:
   # Set "build version number" to "short-commit-hash" or when tagged to "tag name" (Travis style)
@@ -23,13 +27,17 @@ install:
 
 build_script:
   - C:\Python36\python .\scripts\windows\update-version-info.py
-  - C:\Python36\Scripts\pyinstaller --onefile .\git-xltrail-diff.py --name git-xltrail-diff-x86.exe --version-file .\scripts\windows\git-xltrail-version-info.py --icon .\scripts\windows\git-xltrail-logo.ico
+  - C:\Python36\Scripts\pyinstaller --onefile .\src\diff.py --name git-xltrail-diff-x86.exe --version-file .\scripts\windows\git-xltrail-version-info.py --icon .\scripts\windows\git-xltrail-logo.ico --add-data .\src\xltrail-core.dll;.
   - mv dist\git-xltrail-diff-x86.exe git-xltrail-diff-x86.exe
-  - C:\Python36-x64\Scripts\pyinstaller --onefile .\git-xltrail-diff.py --name git-xltrail-diff-x64.exe --version-file .\scripts\windows\git-xltrail-version-info.py --icon .\scripts\windows\git-xltrail-logo.ico
+  - C:\Python36-x64\Scripts\pyinstaller --onefile .\src\diff.py --name git-xltrail-diff-x64.exe --version-file .\scripts\windows\git-xltrail-version-info.py --icon .\scripts\windows\git-xltrail-logo.ico --add-data .\src\xltrail-core.dll;.
   - mv dist\git-xltrail-diff-x64.exe git-xltrail-diff-x64.exe
-  - C:\Python36\Scripts\pyinstaller --onefile .\git-xltrail.py --name git-xltrail-x86.exe --version-file .\scripts\windows\git-xltrail-version-info.py --icon .\scripts\windows\git-xltrail-logo.ico
+  - C:\Python36\Scripts\pyinstaller --onefile .\src\merge.py --name git-xltrail-merge-x86.exe --version-file .\scripts\windows\git-xltrail-version-info.py --icon .\scripts\windows\git-xltrail-logo.ico --add-data .\src\xltrail-core.dll;.
+  - mv dist\git-xltrail-merge-x86.exe git-xltrail-merge-x86.exe
+  - C:\Python36-x64\Scripts\pyinstaller --onefile .\src\merge.py --name git-xltrail-merge-x64.exe --version-file .\scripts\windows\git-xltrail-version-info.py --icon .\scripts\windows\git-xltrail-logo.ico --add-data .\src\xltrail-core.dll;.
+  - mv dist\git-xltrail-merge-x64.exe git-xltrail-merge-x64.exe
+  - C:\Python36\Scripts\pyinstaller --onefile .\src\cli.py --name git-xltrail-x86.exe --version-file .\scripts\windows\git-xltrail-version-info.py --icon .\scripts\windows\git-xltrail-logo.ico --add-data .\src\xltrail-core.dll;.
   - mv dist\git-xltrail-x86.exe git-xltrail-x86.exe
-  - C:\Python36-x64\Scripts\pyinstaller --onefile .\git-xltrail.py --name git-xltrail-x64.exe --version-file .\scripts\windows\git-xltrail-version-info.py --icon .\scripts\windows\git-xltrail-logo.ico
+  - C:\Python36-x64\Scripts\pyinstaller --onefile .\src\cli.py --name git-xltrail-x64.exe --version-file .\scripts\windows\git-xltrail-version-info.py --icon .\scripts\windows\git-xltrail-logo.ico --add-data .\src\xltrail-core.dll;.
   - mv dist\git-xltrail-x64.exe git-xltrail-x64.exe
 
 after_build:
@@ -43,9 +51,12 @@ after_build:
   - cmd: signtool sign /f scripts/windows/key.p12 /p %secure% git-xltrail-windows*.exe
   
 test_script:
-  - C:\Python36\python -m unittest discover -vv
-  - C:\Python36-x64\python -m unittest discover -vv
+  - C:\Python36\python -m unittest discover src -vv
+  - C:\Python36-x64\python -m unittest discover src -vv
 
+
+on_success:
+  - ps: if ($env:APPVEYOR_REPO_TAG -eq $TRUE) { Invoke-RestMethod -Uri https://api.netlify.com/build_hooks/$env:NETLIFY_BUILD_HOOK -Method 'POST' -Body '' }
 
 artifacts:
   - path: git-xltrail-windows-*.exe
@@ -53,6 +64,8 @@ artifacts:
   - path: git-xltrail-x64.exe
   - path: git-xltrail-diff-x86.exe
   - path: git-xltrail-diff-x64.exe
+  - path: git-xltrail-merge-x86.exe
+  - path: git-xltrail-merge-x64.exe
 
 deploy:
 - provider: GitHub
